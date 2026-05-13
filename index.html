@@ -36,7 +36,9 @@ button{
     font-size:16px;
 }
 
-button:hover{ filter:brightness(1.1); }
+button:hover{
+    filter:brightness(1.1);
+}
 
 .bar{
     width:100%;
@@ -64,6 +66,7 @@ button:hover{ filter:brightness(1.1); }
 .stat{
     margin-top:8px;
     font-size:18px;
+    word-break:break-word;
 }
 </style>
 </head>
@@ -77,28 +80,25 @@ button:hover{ filter:brightness(1.1); }
 <button id="startBtn">Start Downloading</button>
 <button id="saveBtn">Save</button>
 
-<div id="progressText">0% finished downloading</div>
+<div class="stat" id="progressText">0% finished downloading</div>
+
 <div class="bar"><div class="fill" id="fill"></div></div>
 
 <div id="speedSection" class="section hidden">
-    <div id="speedText">Speed: 1</div>
-    <div id="effectiveSpeedText">Effective Speed: 1</div>
+    <div class="stat" id="speedText">Speed: 1</div>
+    <div class="stat" id="effectiveSpeedText">Effective Speed: 1</div>
     <button id="speedBtn">Speed Up Time</button>
 </div>
 
 <div id="devSection" class="section hidden">
-    <div id="devTimeText">Dev Time: 0</div>
-    <div id="devSpeedText">DevSpeed: 1</div>
+    <div class="stat" id="devTimeText">Dev Time: 0 seconds</div>
+    <div class="stat" id="devSpeedText">DevSpeed: 1</div>
 </div>
 
 <div id="miniGame" class="section hidden">
     <h2>Minigame</h2>
 
-    <div id="numberText">Number: 1</div>
-    <div id="boostText">Boost: 0</div>
-    <div id="superBoostText">SuperBoost: 1</div>
-    <div id="megaBoostText">MegaBoost: 0</div>
-    <div id="gigaBoostText">GigaBoost: 1</div>
+    <div class="stat" id="numberText">Number: 1</div>
 
     <button id="boostBtn">+1 Boost</button>
     <button id="superBoostBtn">+1 SuperBoost</button>
@@ -117,19 +117,28 @@ button:hover{ filter:brightness(1.1); }
 
 window.onload = () => {
 
+// ===== LOAD =====
+function load(key, fallback){
+    let v = localStorage.getItem(key);
+    return v ? new ExpantaNum(v) : fallback;
+}
+
+function save(){
+    localStorage.setItem("time", time.toString());
+    localStorage.setItem("speed", speed.toString());
+    localStorage.setItem("devTime", devTime.toString());
+    localStorage.setItem("devSpeed", devSpeed.toString());
+    localStorage.setItem("inMeta", inMeta ? "1" : "0");
+}
+
 // ===== STATE =====
-let time = new ExpantaNum(0);
-let speed = new ExpantaNum(1);
-let devTime = new ExpantaNum(0);
-let devSpeed = new ExpantaNum(1);
+let time = load("time", new ExpantaNum(0));
+let speed = load("speed", new ExpantaNum(1));
+let devTime = load("devTime", new ExpantaNum(0));
+let devSpeed = load("devSpeed", new ExpantaNum(1));
 
-let number = new ExpantaNum(1);
-let boost = new ExpantaNum(0);
-let superBoost = new ExpantaNum(1);
-let megaBoost = new ExpantaNum(0);
-let gigaBoost = new ExpantaNum(1);
+let inMeta = localStorage.getItem("inMeta") === "1";
 
-let inMeta = false;
 let downloading = false;
 
 let autoUnlocked = false;
@@ -137,46 +146,37 @@ let devSpeedUnlocked = false;
 let minigameUnlocked = false;
 
 // ===== ELEMENTS =====
-const $ = id => document.getElementById(id);
+const progressText = document.getElementById("progressText");
+const fill = document.getElementById("fill");
 
-const progressText = $("progressText");
-const fill = $("fill");
+const speedSection = document.getElementById("speedSection");
+const devSection = document.getElementById("devSection");
+const miniGame = document.getElementById("miniGame");
+const metaSection = document.getElementById("metaSection");
 
-const speedSection = $("speedSection");
-const devSection = $("devSection");
-const miniGame = $("miniGame");
-const metaSection = $("metaSection");
+// ===== SAVE BUTTON =====
+document.getElementById("saveBtn").onclick = save;
 
-// ===== FORMAT =====
-const format = n => n.toString();
-
-// ===== SAVE =====
-function save(){
-    localStorage.setItem("time", time.toString());
-    localStorage.setItem("speed", speed.toString());
-    localStorage.setItem("devTime", devTime.toString());
-    localStorage.setItem("devSpeed", devSpeed.toString());
-}
-
+// auto-save every 30s
 setInterval(save, 30000);
 
 // ===== BUTTONS =====
-$("saveBtn").onclick = save;
+document.getElementById("speedBtn").onclick = () => {
+    speed = speed.add(1);
+};
 
-$("speedBtn").onclick = () => speed = speed.add(1);
+document.getElementById("boostBtn").onclick = () => {};
+document.getElementById("superBoostBtn").onclick = () => {};
+document.getElementById("megaBoostBtn").onclick = () => {};
+document.getElementById("gigaBoostBtn").onclick = () => {};
 
-$("boostBtn").onclick = () => boost = boost.add(1);
-$("superBoostBtn").onclick = () => superBoost = superBoost.add(1);
-$("megaBoostBtn").onclick = () => megaBoost = megaBoost.add(1);
-$("gigaBoostBtn").onclick = () => gigaBoost = gigaBoost.add(1);
+// ===== META BUTTON =====
+document.getElementById("metaBtn").onclick = () => {
 
-// ===== META =====
-$("metaBtn").onclick = () => {
-
-    alert("Are you sure?");
-    alert("REALLY sure?");
-    alert("You can't undo this.");
-    alert("Okay.");
+    alert("Are you sure to enter the Meta? You will reset everything up to this point.");
+    alert("Are you REALLY sure? You will not download the game now.");
+    alert("Are you REALLY REALLY sure? You can't undo this.");
+    alert("Okay, you did this to yourself.");
 
     inMeta = true;
 
@@ -189,10 +189,12 @@ $("metaBtn").onclick = () => {
     devSection.remove();
     miniGame.remove();
     metaSection.remove();
+
+    save();
 };
 
-// ===== START =====
-$("startBtn").onclick = () => {
+// ===== START BUTTON =====
+document.getElementById("startBtn").onclick = () => {
 
     if(inMeta){
         time = time.add(1);
@@ -204,13 +206,18 @@ $("startBtn").onclick = () => {
 
     setInterval(() => {
 
-        let percent =
-            new ExpantaNum(1)
-            .sub(new ExpantaNum(1).div(time.add(10).div(10)))
-            .mul(100);
+        let percent;
+
+        if(inMeta){
+            percent = time.mul(10);
+        } else {
+            percent =
+                new ExpantaNum(1)
+                .sub(new ExpantaNum(1).div(time.add(10).div(10)))
+                .mul(100);
+        }
 
         if(percent.gte(90)) speedSection.classList.remove("hidden");
-
         if(percent.gte(99.995)) autoUnlocked = true;
         if(percent.gte(99.999900)) devSpeedUnlocked = true;
         if(percent.gte(99.999910)) minigameUnlocked = true;
@@ -224,12 +231,7 @@ $("startBtn").onclick = () => {
             devSpeed = devSpeed.mul(1.001);
         }
 
-        if(devTime.gte("10^^10000")){
-            metaSection.classList.remove("hidden");
-        }
-
         let effectiveSpeed = speed;
-
         if(autoUnlocked){
             effectiveSpeed = speed.mul(devTime.sqrt());
         }
@@ -238,10 +240,15 @@ $("startBtn").onclick = () => {
             time = time.add(effectiveSpeed.mul(0.01));
         }
 
-        progressText.textContent =
-            percent.gte("99.99999999")
-            ? "100?% finished downloading"
-            : format(percent) + "% finished downloading";
+        if(devTime.gte("10^^10000")){
+            metaSection.classList.remove("hidden");
+        }
+
+        if(percent.gte("99.99999999")){
+            progressText.textContent = "100?% finished downloading";
+        } else {
+            progressText.textContent = percent.toString() + "% finished downloading";
+        }
 
         fill.style.width = Math.min(percent.toNumber(), 100) + "%";
 
