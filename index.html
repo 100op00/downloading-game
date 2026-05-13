@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Infinite Download</title>
+
+<script src="https://cdn.jsdelivr.net/gh/Naruyoko/ExpantaNum.js/ExpantaNum.js"></script>
+
+<style>
+body{
+    background:#111;
+    color:white;
+    font-family:Arial,sans-serif;
+    margin:0;
+    padding:20px;
+}
+
+.box{
+    max-width:950px;
+    margin:auto;
+    background:#222;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 0 20px rgba(255,255,255,0.1);
+}
+
+button{
+    padding:10px 18px;
+    margin:5px;
+    border:none;
+    border-radius:10px;
+    background:#4caf50;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    filter:brightness(1.1);
+}
+
+.bar{
+    width:100%;
+    height:30px;
+    background:#333;
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:15px;
+}
+
+.fill{
+    height:100%;
+    width:0%;
+    background:#4caf50;
+}
+
+.section{
+    margin-top:20px;
+    padding-top:15px;
+    border-top:1px solid #444;
+}
+
+.hidden{
+    display:none;
+}
+
+.stat{
+    margin-top:8px;
+    font-size:18px;
+    word-break:break-word;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+
+<h1>Infinite Download</h1>
+
+<button id="startBtn">
+    Start Downloading
+</button>
+
+<div class="stat" id="progressText">
+    0% finished downloading
+</div>
+
+<div class="bar">
+    <div class="fill" id="fill"></div>
+</div>
+
+<!-- Speed -->
+
+<div id="speedSection" class="section hidden">
+
+    <div class="stat" id="speedText">
+        Speed: 1
+    </div>
+
+    <div class="stat" id="effectiveSpeedText">
+        Effective Speed: 1
+    </div>
+
+    <button id="speedBtn">
+        Speed Up Time
+    </button>
+
+</div>
+
+<!-- Dev -->
+
+<div id="devSection" class="section hidden">
+
+    <div class="stat" id="devTimeText">
+        Dev Time: 0 seconds
+    </div>
+
+    <div class="stat" id="devSpeedText">
+        DevSpeed: 1
+    </div>
+
+</div>
+
+<!-- Minigame -->
+
+<div id="miniGame" class="section hidden">
+
+    <h2>Minigame</h2>
+
+    <div class="stat" id="numberText">
+        Number: 1
+    </div>
+
+    <div class="stat" id="boostText">
+        Boost: 0
+    </div>
+
+    <div class="stat" id="superBoostText">
+        SuperBoost: 1
+    </div>
+
+    <div class="stat" id="megaBoostText">
+        MegaBoost: 0
+    </div>
+
+    <div class="stat" id="gigaBoostText">
+        GigaBoost: 1
+    </div>
+
+    <button id="boostBtn">+1 Boost</button>
+    <button id="superBoostBtn">+1 SuperBoost</button>
+    <button id="megaBoostBtn">+1 MegaBoost</button>
+    <button id="gigaBoostBtn">+1 GigaBoost</button>
+
+</div>
+
+<!-- Meta -->
+
+<div id="metaSection" class="section hidden">
+
+    <h2>Meta</h2>
+
+    <button id="metaBtn">
+        Enter the Meta
+    </button>
+
+</div>
+
+</div>
+
+<script>
+
+window.onload = () => {
+
+let downloading = false;
+
+let inMeta = false;
+
+// Main
+let time = new ExpantaNum(0);
+
+let speed = new ExpantaNum(1);
+
+let devTime = new ExpantaNum(0);
+
+let devSpeed = new ExpantaNum(1);
+
+// Unlocks
+let autoUnlocked = false;
+
+let devSpeedUnlocked = false;
+
+let minigameUnlocked = false;
+
+// Minigame
+let number = new ExpantaNum(1);
+
+let boost = new ExpantaNum(0);
+
+let superBoost = new ExpantaNum(1);
+
+let megaBoost = new ExpantaNum(0);
+
+let gigaBoost = new ExpantaNum(1);
+
+// Elements
+const progressText =
+    document.getElementById("progressText");
+
+const fill =
+    document.getElementById("fill");
+
+const speedSection =
+    document.getElementById("speedSection");
+
+const devSection =
+    document.getElementById("devSection");
+
+const miniGame =
+    document.getElementById("miniGame");
+
+const metaSection =
+    document.getElementById("metaSection");
+
+// Formatting
+function format(num){
+
+    return num.toString();
+}
+
+function formatTime(sec){
+
+    if(!sec.isFinite()){
+
+        return "Infinite Dev Time";
+    }
+
+    if(sec.gt("1e100")){
+
+        return sec.toString() + " seconds";
+    }
+
+    let s = sec.toNumber();
+
+    if(!isFinite(s) || isNaN(s)){
+
+        return "Infinite Dev Time";
+    }
+
+    let years = Math.floor(s / 31536000);
+    s %= 31536000;
+
+    let months = Math.floor(s / 2592000);
+    s %= 2592000;
+
+    let days = Math.floor(s / 86400);
+    s %= 86400;
+
+    let hours = Math.floor(s / 3600);
+    s %= 3600;
+
+    let minutes = Math.floor(s / 60);
+    s %= 60;
+
+    return years + " years and " +
+           months + " months and " +
+           days + " days and " +
+           hours + " hours and " +
+           minutes + " minutes and " +
+           s.toFixed(2) + " seconds";
+}
+
+// Buttons
+
+document.getElementById("speedBtn").onclick = () => {
+
+    speed = speed.add(1);
+
+};
+
+document.getElementById("boostBtn").onclick = () => {
+
+    boost = boost.add(1);
+
+};
+
+document.getElementById("superBoostBtn").onclick = () => {
+
+    superBoost = superBoost.add(1);
+
+};
+
+document.getElementById("megaBoostBtn").onclick = () => {
+
+    megaBoost = megaBoost.add(1);
+
+};
+
+document.getElementById("gigaBoostBtn").onclick = () => {
+
+    gigaBoost = gigaBoost.add(1);
+
+};
+
+// Meta Button
+
+document.getElementById("metaBtn").onclick = () => {
+
+    alert(
+        "Are you sure to enter the Meta? You will reset everything up to this point."
+    );
+
+    alert(
+        "Are you REALLY sure? You will not download the game now."
+    );
+
+    alert(
+        "Are you REALLY REALLY sure? You can't undo this."
+    );
+
+    alert(
+        "Okay, you did this to yourself."
+    );
+
+    // Enter Meta
+    inMeta = true;
+
+    // Reset progress
+    time = new ExpantaNum(0);
+
+    // Remove systems
+    speedSection.remove();
+
+    devSection.remove();
+
+    miniGame.remove();
+
+    metaSection.remove();
+
+    // Reset variables
+    speed = new ExpantaNum(0);
+
+    devTime = new ExpantaNum(0);
+
+    devSpeed = new ExpantaNum(0);
+
+    number = new ExpantaNum(0);
+
+    boost = new ExpantaNum(0);
+
+    superBoost = new ExpantaNum(0);
+
+    megaBoost = new ExpantaNum(0);
+
+    gigaBoost = new ExpantaNum(0);
+
+    autoUnlocked = false;
+
+    devSpeedUnlocked = false;
+
+    minigameUnlocked = false;
+
+    progressText.textContent =
+        "0% finished downloading";
+
+    fill.style.width = "0%";
+};
+
+// Start Button
+
+document.getElementById("startBtn").onclick = () => {
+
+    // Meta mode
+    if(inMeta){
+
+        // +10% per click
+        time = time.add(1);
+
+        return;
+    }
+
+    if(downloading) return;
+
+    downloading = true;
+
+    setInterval(() => {
+
+        // Download percent
+        let percent;
+
+        if(inMeta){
+
+            // Meta download
+            percent =
+                time.mul(10);
+
+        }else{
+
+            // Normal download
+            percent =
+                new ExpantaNum(1)
+                .sub(
+                    new ExpantaNum(1).div(
+                        time.add(10).div(10)
+                    )
+                )
+                .mul(100);
+        }
+
+        // Unlock Speed
+        if(percent.gte(90)){
+
+            speedSection.classList.remove("hidden");
+        }
+
+        // Unlock Dev Time
+        if(percent.gte(99.995)){
+
+            autoUnlocked = true;
+
+            devSection.classList.remove("hidden");
+        }
+
+        // Unlock DevSpeed
+        if(percent.gte(99.999900)){
+
+            devSpeedUnlocked = true;
+        }
+
+        // Unlock Minigame
+        if(percent.gte(99.999910)){
+
+            minigameUnlocked = true;
+
+            miniGame.classList.remove("hidden");
+        }
+
+        // Unlock Meta
+        if(devTime.gte("10^^10000")){
+
+            metaSection.classList.remove("hidden");
+        }
+
+        // Auto speed + Dev Time
+        if(autoUnlocked){
+
+            speed = speed.add(1);
+
+            devTime =
+                devTime.add(
+                    new ExpantaNum(0.01)
+                    .mul(devSpeed)
+                );
+        }
+
+        // DevSpeed growth
+        if(devSpeedUnlocked){
+
+            devSpeed =
+                devSpeed.mul(1.001);
+
+            // 1,000,000 years
+            if(devTime.gte("31536000000000")){
+
+                devSpeed =
+                    devSpeed.mul(1.5);
+            }
+
+            // At 1e1250 Dev Time
+            if(devTime.gte("1e1250")){
+
+                devSpeed =
+                    devSpeed.tetrate(1.5);
+
+                speed =
+                    speed.tetrate(1.5);
+            }
+        }
+
+        // Effective Speed
+        let effectiveSpeed = speed;
+
+        if(autoUnlocked){
+
+            effectiveSpeed =
+                speed.mul(
+                    devTime.sqrt()
+                );
+        }
+
+        // Time gain
+        if(!inMeta){
+
+            time =
+                time.add(
+                    effectiveSpeed.mul(0.01)
+                );
+        }
+
+        // Minigame
+        if(minigameUnlocked){
+
+            let growth =
+                new ExpantaNum(1.01)
+                .mul(
+                    boost.div(100).add(1)
+                )
+                .mul(
+                    superBoost
+                    .pow(
+                        megaBoost.div(100)
+                    )
+                    .pow(
+                        gigaBoost
+                    )
+                );
+
+            number =
+                number.mul(growth);
+        }
+
+        // Progress display
+        if(!inMeta){
+
+            if(percent.gte("99.99999999")){
+
+                progressText.textContent =
+                    "100?% finished downloading";
+
+            }else{
+
+                progressText.textContent =
+                    format(percent) +
+                    "% finished downloading";
+            }
+
+        }else{
+
+            progressText.textContent =
+                format(percent) +
+                "% finished downloading";
+        }
+
+        fill.style.width =
+            Math.min(
+                percent.toNumber(),
+                100
+            ) + "%";
+
+        // Displays
+
+        if(document.getElementById("speedText")){
+
+            document.getElementById(
+                "speedText"
+            ).textContent =
+                "Speed: " +
+                format(speed);
+        }
+
+        if(document.getElementById("effectiveSpeedText")){
+
+            document.getElementById(
+                "effectiveSpeedText"
+            ).textContent =
+                "Effective Speed: " +
+                format(effectiveSpeed);
+        }
+
+        if(document.getElementById("devTimeText")){
+
+            document.getElementById(
+                "devTimeText"
+            ).textContent =
+                "Dev Time: " +
+                formatTime(devTime);
+        }
+
+        if(document.getElementById("devSpeedText")){
+
+            document.getElementById(
+                "devSpeedText"
+            ).textContent =
+                "DevSpeed: " +
+                format(devSpeed);
+        }
+
+        if(document.getElementById("numberText")){
+
+            document.getElementById(
+                "numberText"
+            ).textContent =
+                "Number: " +
+                format(number);
+        }
+
+        if(document.getElementById("boostText")){
+
+            document.getElementById(
+                "boostText"
+            ).textContent =
+                "Boost: " +
+                format(boost);
+        }
+
+        if(document.getElementById("superBoostText")){
+
+            document.getElementById(
+                "superBoostText"
+            ).textContent =
+                "SuperBoost: " +
+                format(superBoost);
+        }
+
+        if(document.getElementById("megaBoostText")){
+
+            document.getElementById(
+                "megaBoostText"
+            ).textContent =
+                "MegaBoost: " +
+                format(megaBoost);
+        }
+
+        if(document.getElementById("gigaBoostText")){
+
+            document.getElementById(
+                "gigaBoostText"
+            ).textContent =
+                "GigaBoost: " +
+                format(gigaBoost);
+        }
+
+    },10);
+
+};
+
+};
+
+</script>
+
+</body>
+</html>
